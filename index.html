@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Unwritten Universe — Areshey</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #03030c;
+            --bg-midnight: #0a0a1a;
+            --violet-glow: rgba(138, 43, 226, 0.25);
+            --gold: #dfb15b;
+            --gold-glow: rgba(223, 177, 91, 0.35);
+            --text-main: #f0f0f5;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 15, 35, 0.7);
+            --glass-border: rgba(223, 177, 91, 0.22);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.95);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chapter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 1.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+            text-align: center;
+        }
+
+        .chapter.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 10;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+        }
+
+        p {
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--text-muted);
+            max-width: 600px;
+            font-size: 1.05rem;
+            margin-top: 1.2rem;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 30px var(--violet-glow);
+            margin-top: 1.5rem;
+        }
+
+        .cinematic-btn {
+            font-family: 'Cinzel', serif;
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 0.9rem 2.5rem;
+            font-size: 0.95rem;
+            letter-spacing: 0.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            margin-top: 2.5rem;
+            box-shadow: 0 0 15px rgba(223, 177, 91, 0.1);
+        }
+
+        .cinematic-btn:hover {
+            background: var(--gold);
+            color: var(--bg-deep);
+            box-shadow: 0 0 30px var(--gold-glow);
+            transform: translateY(-2px);
+        }
+
+        #prologue h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--text-main);
+            text-shadow: 0 0 30px var(--violet-glow);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: var(--gold);
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            margin-bottom: 2rem;
+        }
+
+        video {
+            width: 100%;
+            max-height: 460px;
+            border-radius: 12px;
+            outline: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            background: #000;
+        }
+
+        .audio-player-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .audio-visualizer-ring {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 2px dashed var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spinSlow 12s linear infinite;
+            box-shadow: 0 0 20px var(--gold-glow);
+        }
+
+        .audio-visualizer-ring.playing {
+            animation: spinFast 3s linear infinite, pulseGlow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+        @keyframes spinFast { 100% { transform: rotate(360deg); } }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px var(--gold-glow); }
+            100% { box-shadow: 0 0 35px var(--gold); }
+        }
+
+        .garden-node {
+            display: inline-block;
+            padding: 0.9rem 1.6rem;
+            margin: 0.5rem;
+            background: rgba(223, 177, 91, 0.05);
+            border: 1px solid rgba(223, 177, 91, 0.3);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            color: var(--gold);
+        }
+
+        .garden-node:hover {
+            background: rgba(223, 177, 91, 0.15);
+            box-shadow: 0 0 20px var(--gold-glow);
+            transform: scale(1.05);
+        }
+
+        #garden-reveal-text {
+            min-height: 60px;
+            margin-top: 1.5rem;
+            font-style: italic;
+            color: var(--text-main);
+        }
+
+        .nav-hud {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 1rem;
+            background: rgba(10, 10, 26, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px;
+            border: 1px solid rgba(223, 177, 91, 0.2);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .nav-hud.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0.4rem 0.8rem;
+            transition: color 0.3s;
+        }
+
+        .nav-btn:hover {
+            color: var(--gold);
+        }
+
+        .final-name-container {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.8rem, 7vw, 5.5rem);
+            letter-spacing: 0.25em;
+            color: var(--text-main);
+            display: flex;
+            gap: 0.4rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .name-letter {
+            opacity: 0;
+            transform: translateY(20px);
+            filter: blur(10px);
+            transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--gold);
+            text-shadow: 0 0 40px var(--gold-glow);
+        }
+
+        .name-letter.revealed {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        .final-quote {
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 1.5s ease, transform 1.5s ease;
+            margin-top: 2rem;
+            font-size: 1.15rem;
+            letter-spacing: 0.05em;
+        }
+
+        .final-quote.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="starfield"></canvas>
+    <div class="vignette"></div>
+
+    <div class="container">
+
+        <!-- PROLOGUE -->
+        <section id="prologue" class="chapter active">
+            <div class="glass-card">
+                <h1>THE UNWRITTEN UNIVERSE</h1>
+                <p class="subtitle">"Some worlds begin with a map.<br>Some begin with a question.<br>This one begins with a quiet little moment."</p>
+                <button class="cinematic-btn" onclick="startUniverse()">ENTER THIS UNIVERSE</button>
+            </div>
+        </section>
+
+        <!-- CHAPTER 01 -->
+        <section id="chapter-1" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 01</h3>
+                <h2>THE FIRST IMPRESSION</h2>
+                <p>Certain moments stay preserved in the architecture of memory without ever needing permission or planning. They simply arrive, linger softly, and change the way everything quiet feels.</p>
+            </div>
+        </section>
+
+        <!-- CHAPTER 02 -->
+        <section id="chapter-2" class="chapter">
+            <div class="glass-card" style="max-width: 720px;">
+                <h3>CHAPTER 02</h3>
+                <h2>THE UNIVERSE IN HER EYES</h2>
+                <p style="margin-bottom: 1.5rem;">An appreciation captured in motion.</p>
+                <video id="video-reel1" controls playsinline onplay="pauseAmbientSound()" onpause="resumeAmbientSound()">
+                    <source src="assets/reel1.mp4" type="video/mp4">
+                    Your browser does not support video playback.
+                </video>
+            </div>
+        </section>
+
+        <!-- CHAPTER 03 -->
+        <section id="chapter-3" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 03</h3>
+                <h2>A SONG FROM ANOTHER WORLD</h2>
+                <p style="margin-bottom: 1.5rem;">A melody carried across time.</p>
+                <div class="audio-player-box">
+                    <div class="audio-visualizer-ring" id="ring-3">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    </div>
+                    <audio id="audio-3" src="assets/Screen_Recording_20261101_165038~4.mp4" onplay="onAudioPlay('audio-3', 'ring-3')" onpause="onAudioPause('audio-3', 'ring-3')" onended="onAudioPause('audio-3', 'ring-3')"></audio>
+                    <button class="cinematic-btn" style="margin-top:0;" onclick="toggleAudio('audio-3')">Play Melody</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHAPTER 04 -->
+        <section id="chapter-4" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 04</h3>
+                <h2>A LITTLE SECRET</h2>
+                <p style="margin-bottom: 1.5rem;">The warmth of her own natural voice.</p>
+                <div class="audio-player-box">
+                    <div class="audio-visualizer-ring" id="ring-4">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+                    </div>
+                    <audio id="audio-4" src="assets/Screen_Recording_20261104_120130~2.mp4" onplay="onAudioPlay('audio-4', 'ring-4')" onpause="onAudioPause('audio-4', 'ring-4')" onended="onAudioPause('audio-4', 'ring-4')"></audio>
+                    <button class="cinematic-btn" style="margin-top:0;" onclick="toggleAudio('audio-4')">Listen Voice</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHAPTER 05 -->
+        <section id="chapter-5" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 05</h3>
+                <h2>THE MOMENT THAT STARTED IT ALL</h2>
+                <p style="margin-bottom: 1.5rem;">A genuine reaction captured like a precious memory.</p>
+                <div class="audio-player-box">
+                    <div class="audio-visualizer-ring" id="ring-5">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                    </div>
+                    <audio id="audio-5" src="assets/Screen_Recording_20261104_121400~2.mp4" onplay="onAudioPlay('audio-5', 'ring-5')" onpause="onAudioPause('audio-5', 'ring-5')" onended="onAudioPause('audio-5', 'ring-5')"></audio>
+                    <button class="cinematic-btn" style="margin-top:0;" onclick="toggleAudio('audio-5')">Play Memory</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHAPTER 06 -->
+        <section id="chapter-6" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 06</h3>
+                <h2>THE HIDDEN GARDEN</h2>
+                <p>Explore the fragments scattered across this constellation.</p>
+                <div style="margin-top: 1.5rem;">
+                    <span class="garden-node" onclick="revealGarden(1)">Starlight Memory</span>
+                    <span class="garden-node" onclick="revealGarden(2)">Quiet Resonance</span>
+                    <span class="garden-node" onclick="revealGarden(3)">Distant Echo</span>
+                </div>
+                <div id="garden-reveal-text">Select a glowing fragment above to uncover a hidden note.</div>
+            </div>
+        </section>
+
+        <!-- CHAPTER 07 -->
+        <section id="chapter-7" class="chapter">
+            <div class="glass-card">
+                <h3>CHAPTER 07</h3>
+                <h2>THE LAST SECRET</h2>
+                <p>As the noise of the ordinary world fades away, the boundaries of this universe grow stiller, preparing for what remains unspoken.</p>
+            </div>
+        </section>
+
+        <!-- CHAPTER 08 -->
+        <section id="chapter-8" class="chapter">
+            <div class="glass-card" style="max-width: 720px;">
+                <h3>CHAPTER 08</h3>
+                <h2>BEYOND EVERY DESCRIPTION</h2>
+                <p style="margin-bottom: 1.5rem;">A VIP cinematic appreciation.</p>
+                <video id="video-reel2" controls playsinline onplay="pauseAmbientSound()" onpause="resumeAmbientSound()">
+                    <source src="assets/Video-8212~2.mp4" type="video/mp4">
+                    Your browser does not support video playback.
+                </video>
+            </div>
+        </section>
+
+        <!-- CHAPTER 09 -->
+        <section id="chapter-9" class="chapter">
+            <div style="max-width: 800px; padding: 2rem;">
+                <h3>CHAPTER 09</h3>
+                <h2 style="margin-bottom: 2rem; color: var(--gold);">THE NAME OF THIS UNIVERSE</h2>
+                <div class="final-name-container" id="nameContainer">
+                    <span class="name-letter">A</span>
+                    <span class="name-letter">R</span>
+                    <span class="name-letter">E</span>
+                    <span class="name-letter">S</span>
+                    <span class="name-letter">H</span>
+                    <span class="name-letter">E</span>
+                    <span class="name-letter">Y</span>
+                </div>
+                <div id="finalQuote1" class="final-quote" style="font-family:'Cinzel',serif; color:var(--gold); font-size:1.3rem; margin-top:3rem;">
+                    "This little universe was always yours."
+                </div>
+                <div id="finalQuote2" class="final-quote" style="color:var(--text-muted); margin-top:1.5rem;">
+                    Not because the universe needed a name.<br>But because this one needed a reason.
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Navigation HUD -->
+    <div class="nav-hud" id="navHud">
+        <button class="nav-btn" onclick="prevChapter()">← PREV</button>
+        <span class="nav-btn" id="chapterIndicator" style="cursor: default;">00 / 09</span>
+        <button class="nav-btn" onclick="nextChapter()">NEXT →</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const stars = Array.from({ length: 220 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 1.8,
+            alpha: Math.random(),
+            speed: Math.random() * 0.0008 + 0.0002
+        }));
+
+        function animateStars() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0.2) star.speed = -star.speed;
+                ctx.globalAlpha = Math.abs(star.alpha);
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            });
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
+
+        let currentChapter = 0;
+        const totalChapters = 9;
+        const chapters = document.querySelectorAll('.chapter');
+        const navHud = document.getElementById('navHud');
+        const chapterIndicator = document.getElementById('chapterIndicator');
+
+        function updateChapterDisplay() {
+            chapters.forEach((ch, idx) => {
+                ch.classList.toggle('active', idx === currentChapter);
+            });
+            chapterIndicator.textContent = `0${currentChapter} / 09`;
+            navHud.classList.toggle('visible', currentChapter > 0);
+
+            if (currentChapter === 9) {
+                triggerFinalReveal();
+            } else {
+                stopAllAudioAndVideos();
+            }
+        }
+
+        function nextChapter() {
+            if (currentChapter < totalChapters) {
+                currentChapter++;
+                updateChapterDisplay();
+            }
+        }
+
+        function prevChapter() {
+            if (currentChapter > 0) {
+                currentChapter--;
+                updateChapterDisplay();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (currentChapter === 0) return;
+            if (e.key === 'ArrowRight' || e.key === 'PageDown') nextChapter();
+            if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevChapter();
+        });
+
+        let audioCtx = null;
+        let ambientGain = null;
+        let isAudioRunning = false;
+
+        function startUniverse() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                ambientGain = audioCtx.createGain();
+                ambientGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                ambientGain.connect(audioCtx.destination);
+                playAmbientChord(220, 329.63, 440);
+                isAudioRunning = true;
+            } catch(e) {
+                console.log("Audio context prevented or unsupported.");
+            }
+            nextChapter();
+        }
+
+        function playAmbientChord(f1, f2, f3) {
+            if (!audioCtx) return;
+            [f1, f2, f3].forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 3);
+                osc.connect(gain);
+                gain.connect(ambientGain);
+                osc.start();
+            });
+        }
+
+        function pauseAmbientSound() {
+            if (ambientGain && audioCtx) {
+                ambientGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            }
+        }
+
+        function resumeAmbientSound() {
+            if (ambientGain && audioCtx && isAudioRunning) {
+                ambientGain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.8);
+            }
+        }
+
+        function toggleAudio(audioId) {
+            const audio = document.getElementById(audioId);
+            ['audio-3', 'audio-4', 'audio-5'].forEach(id => {
+                if (id !== audioId) {
+                    document.getElementById(id).pause();
+                    document.getElementById(id).currentTime = 0;
+                }
+            });
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+
+        function onAudioPlay(audioId, ringId) {
+            pauseAmbientSound();
+            document.getElementById(ringId).classList.add('playing');
+        }
+
+        function onAudioPause(audioId, ringId) {
+            resumeAmbientSound();
+            document.getElementById(ringId).classList.remove('playing');
+        }
+
+        function stopAllAudioAndVideos() {
+            ['audio-3', 'audio-4', 'audio-5'].forEach(id => {
+                const aud = document.getElementById(id);
+                aud.pause();
+                aud.currentTime = 0;
+            });
+            ['video-reel1', 'video-reel2'].forEach(id => {
+                const vid = document.getElementById(id);
+                vid.pause();
+            });
+            resumeAmbientSound();
+        }
+
+        function revealGarden(type) {
+            const revealBox = document.getElementById('garden-reveal-text');
+            const messages = {
+                1: "“Some stars are only visible when all the noise around us goes completely still.”",
+                2: "“A frequency of warmth that doesn't need to be explained to be felt.”",
+                3: "“Like a quiet note carried by a midnight breeze across an endless sky.”"
+            };
+            revealBox.style.opacity = 0;
+            setTimeout(() => {
+                revealBox.textContent = messages[type];
+                revealBox.style.opacity = 1;
+            }, 250);
+        }
+
+        let revealTriggered = false;
+        function triggerFinalReveal() {
+            if (revealTriggered) return;
+            revealTriggered = true;
+
+            if (ambientGain && audioCtx) {
+                ambientGain.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime + 2.0);
+            }
+
+            const letters = document.querySelectorAll('.name-letter');
+            letters.forEach((letter, idx) => {
+                setTimeout(() => {
+                    letter.classList.add('revealed');
+                }, 400 * (idx + 1));
+            });
+
+            setTimeout(() => {
+                document.getElementById('finalQuote1').classList.add('visible');
+            }, 400 * letters.length + 600);
+
+            setTimeout(() => {
+                document.getElementById('finalQuote2').classList.add('visible');
+            }, 400 * letters.length + 1800);
+        }
+    </script>
+</body>
+</html>
+
